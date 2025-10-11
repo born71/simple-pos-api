@@ -77,9 +77,53 @@ public class ProductController {
         }
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<Product> updateProduct(@PathVariable Long id, @RequestBody Product product) {
-        return ResponseEntity.ok(productService.updateProduct(id, product));
+    @PutMapping(value = "/{id}/upload", consumes = "multipart/form-data")
+    public ResponseEntity<Product> updateProductWithImage(
+            @PathVariable Long id,
+            @RequestParam String name,
+            @RequestParam String category,
+            @RequestParam double price,
+            @RequestParam int stockQuantity,
+            @RequestPart(required = false) MultipartFile imageFile) {
+
+        try {
+            Product existing = productService.getProductById(id);
+
+            String fileName = existing.getImageUrl(); // keep old one by default
+
+            // If new image uploaded, replace it
+            if (imageFile != null && !imageFile.isEmpty()) {
+                // Delete old image if exists
+                if (fileName != null && !fileName.isEmpty()) {
+                    String oldPath = fileName.replace("/uploads/", "uploads/");
+                    File oldFile = new File(oldPath);
+                    if (oldFile.exists()) oldFile.delete();
+                }
+
+                // Save new image
+                File uploadDir = new File("uploads/");
+                if (!uploadDir.exists()) uploadDir.mkdirs();
+
+                fileName = System.currentTimeMillis() + "_" + imageFile.getOriginalFilename();
+                Path filePath = Paths.get("uploads/", fileName);
+                Files.write(filePath, imageFile.getBytes());
+
+                fileName = "/uploads/" + fileName;
+            }
+
+            // Update info
+            existing.setName(name);
+            existing.setCategory(category);
+            existing.setPrice(price);
+            existing.setStockQuantity(stockQuantity);
+            existing.setImageUrl(fileName);
+
+            return ResponseEntity.ok(productService.createProduct(existing));
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     @DeleteMapping("/{id}")
