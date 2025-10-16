@@ -33,12 +33,25 @@ public class UserServiceImpl implements UserService {
         return userRepository.save(user);
     }
 
+    /**
+     * ✅ Safely updates editable profile fields only.
+     * Email and password are NOT changed here.
+     */
     @Override
     public User updateUser(Long id, User user) {
         User existing = getUserById(id);
-        existing.setEmail(user.getEmail());
-        existing.setName(user.getName());
-        existing.setPassword(user.getPassword());
+
+        // Editable fields
+        existing.setFirstName(user.getFirstName());
+        existing.setLastName(user.getLastName());
+        existing.setPhone(user.getPhone());
+        existing.setAddress(user.getAddress());
+        existing.setDateOfBirth(user.getDateOfBirth());
+
+        // Optional: allow username or email updates only if you want
+        // existing.setUsername(user.getUsername());
+        // existing.setEmail(user.getEmail());
+
         return userRepository.save(existing);
     }
 

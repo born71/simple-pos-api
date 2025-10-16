@@ -1,12 +1,14 @@
 package com.born.simplepos.springSimplePos.controller;
 
 import com.born.simplepos.springSimplePos.entity.User;
+import com.born.simplepos.springSimplePos.repository.UserRepository;
 import com.born.simplepos.springSimplePos.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/users")
@@ -14,6 +16,9 @@ import java.util.List;
 public class UserController {
 
     private final UserService userService;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @Autowired
     public UserController(UserService userService) {
@@ -27,17 +32,28 @@ public class UserController {
 
     @GetMapping("/{id}")
     public ResponseEntity<User> getUserById(@PathVariable Long id) {
-        return ResponseEntity.ok(userService.getUserById(id));
+        return userRepository.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
-
     @PostMapping
     public ResponseEntity<User> createUser(@RequestBody User user) {
         return ResponseEntity.ok(userService.createUser(user));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User user) {
-        return ResponseEntity.ok(userService.updateUser(id, user));
+    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User updatedUser) {
+        Optional<User> optionalUser = userRepository.findById(id);
+        if (optionalUser.isEmpty()) return ResponseEntity.notFound().build();
+
+        User user = optionalUser.get();
+        user.setFirstName(updatedUser.getFirstName());
+        user.setLastName(updatedUser.getLastName());
+        user.setPhone(updatedUser.getPhone());
+        user.setAddress(updatedUser.getAddress());
+        user.setDateOfBirth(updatedUser.getDateOfBirth());
+
+        return ResponseEntity.ok(userRepository.save(user));
     }
 
     @DeleteMapping("/{id}")

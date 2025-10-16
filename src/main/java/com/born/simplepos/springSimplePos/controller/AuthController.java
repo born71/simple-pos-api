@@ -7,8 +7,8 @@ import com.born.simplepos.springSimplePos.repository.UserRepository;
 import com.born.simplepos.springSimplePos.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 import java.util.Optional;
@@ -33,10 +33,16 @@ public class AuthController {
             return ResponseEntity.badRequest().body("Email already registered");
         }
 
+        // ✅ Create new user with only base fields
         User user = User.builder()
+                .username(request.getUsername())
                 .email(request.getEmail())
-                .name(request.getName())
                 .password(passwordEncoder.encode(request.getPassword()))
+                .firstName(null)
+                .lastName(null)
+                .phone(null)
+                .address(null)
+                .dateOfBirth(null)
                 .build();
 
         userRepository.save(user);
@@ -53,16 +59,27 @@ public class AuthController {
         }
 
         User user = userOpt.get();
+
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             return ResponseEntity.badRequest().body("Invalid email or password");
         }
 
-        // ✅ Generate token
         String token = JwtUtil.generateToken(user.getEmail());
+
+        Map<String, Object> userData = Map.ofEntries(
+                Map.entry("id", user.getId()),
+                Map.entry("username", user.getUsername()),
+                Map.entry("email", user.getEmail()),
+                Map.entry("firstName", user.getFirstName()),
+                Map.entry("lastName", user.getLastName()),
+                Map.entry("phone", user.getPhone()),
+                Map.entry("address", user.getAddress()),
+                Map.entry("dateOfBirth", user.getDateOfBirth())
+        );
 
         return ResponseEntity.ok(Map.of(
                 "access_token", token,
-                "user", Map.of("id", user.getId(), "email", user.getEmail(), "name", user.getName())
+                "user", userData
         ));
     }
 
