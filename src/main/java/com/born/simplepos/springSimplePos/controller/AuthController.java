@@ -29,6 +29,13 @@ public class AuthController {
     // ✅ Register endpoint
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
+
+        if (request.getEmail() == null || request.getEmail().trim().isEmpty() ||
+                request.getUsername() == null || request.getUsername().trim().isEmpty() ||
+                request.getPassword() == null || request.getPassword().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("All fields are required");
+        }
+
         if (userRepository.existsByEmail(request.getEmail())) {
             return ResponseEntity.badRequest().body("Email already registered");
         }
@@ -66,15 +73,15 @@ public class AuthController {
 
         String token = JwtUtil.generateToken(user.getEmail());
 
-        Map<String, Object> userData = Map.ofEntries(
-                Map.entry("id", user.getId()),
-                Map.entry("username", user.getUsername()),
-                Map.entry("email", user.getEmail()),
-                Map.entry("firstName", user.getFirstName()),
-                Map.entry("lastName", user.getLastName()),
-                Map.entry("phone", user.getPhone()),
-                Map.entry("address", user.getAddress()),
-                Map.entry("dateOfBirth", user.getDateOfBirth())
+        Map<String, Object> userData = Map.of(
+                "id", user.getId(),
+                "username", user.getUsername(),
+                "email", user.getEmail(),
+                "firstName", user.getFirstName() != null ? user.getFirstName() : "",
+                "lastName", user.getLastName() != null ? user.getLastName() : "",
+                "phone", user.getPhone() != null ? user.getPhone() : "",
+                "address", user.getAddress() != null ? user.getAddress() : "",
+                "dateOfBirth", user.getDateOfBirth() != null ? user.getDateOfBirth().toString() : ""
         );
 
         return ResponseEntity.ok(Map.of(
@@ -82,5 +89,4 @@ public class AuthController {
                 "user", userData
         ));
     }
-
 }
